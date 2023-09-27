@@ -1,7 +1,14 @@
 package me.infamous.luffy_boss.common.entity;
 
+import me.infamous.luffy_boss.LuffyBoss;
+import me.infamous.luffy_boss.common.LogicHelper;
+import me.infamous.luffy_boss.common.entity.attack.AnimatableMeleeAttack;
+import me.infamous.luffy_boss.common.entity.attack.AnimatableMeleeAttackGoal;
+import me.infamous.luffy_boss.common.entity.attack.LuffyAttackType;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.goal.*;
@@ -16,9 +23,8 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.util.DamageSource;
-import net.minecraft.util.SoundEvent;
-import net.minecraft.util.SoundEvents;
+import net.minecraft.util.*;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.vector.Vector3d;
@@ -27,6 +33,8 @@ import net.minecraft.world.BossInfo;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerBossInfo;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.event.ForgeEventFactory;
 import software.bernie.geckolib3.core.IAnimatable;
 import software.bernie.geckolib3.core.PlayState;
@@ -41,9 +49,14 @@ import software.bernie.geckolib3.util.GeckoLibUtil;
 import javax.annotation.Nullable;
 import java.util.function.Predicate;
 
-public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
+public class GearFiveLuffy extends MonsterEntity implements IAnimatable, AnimatableMeleeAttack<LuffyAttackType>{
     private static final DataParameter<Integer> DATA_ID_ATTACK_TARGET = EntityDataManager.defineId(GearFiveLuffy.class, DataSerializers.INT);
-
+    private static final DataParameter<Byte> DATA_ATTACK_TYPE_ID = EntityDataManager.defineId(GearFiveLuffy.class, DataSerializers.BYTE);
+    public static final double ARM_X_OFFSET = 3.4375;
+    public static final double ARM_Y_OFFSET = 5.3857;
+    public static final double BODY_Y_OFFSET = 5.56;
+    public static final double HEAD_Y_OFFSET = 12.7;
+    public static final double LEG_X_OFFSET = 1.25;
     private int destroyBlocksTick;
     private final ServerBossInfo bossEvent = (ServerBossInfo)(new ServerBossInfo(
             this.getDisplayName(),
@@ -54,12 +67,33 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
     private final AnimationFactory animationFactory = GeckoLibUtil.createFactory(this);
     protected static final AnimationBuilder IDLE_ANIM = new AnimationBuilder().addAnimation("idle", ILoopType.EDefaultLoopTypes.LOOP);
     protected static final AnimationBuilder WALK_ANIM = new AnimationBuilder().addAnimation("walk", ILoopType.EDefaultLoopTypes.LOOP);
+    protected static final AnimationBuilder STORM_ANIM = new AnimationBuilder().addAnimation("storm", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
+    protected static final AnimationBuilder GROUND_PUNCH_ANIM = new AnimationBuilder().addAnimation("Attack3", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
+    protected static final AnimationBuilder GIANT_FIST_ANIM = new AnimationBuilder().addAnimation("Attack4", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
+    protected static final AnimationBuilder SHOCKWAVE_ANIM = new AnimationBuilder().addAnimation("shockwave", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
+    private int attackAnimationTick;
+    private LuffyAttackType currentAttackType;
+    private final LuffyPartEntity[] subEntities;
+    private final LuffyPartEntity head;
+    private final LuffyPartEntity body;
+    private final LuffyPartEntity leftArm;
+    private final LuffyPartEntity rightArm;
+    private final LuffyPartEntity leftLeg;
+    private final LuffyPartEntity rightLeg;
 
     public GearFiveLuffy(EntityType<? extends GearFiveLuffy> entityType, World world) {
         super(entityType, world);
         this.setHealth(this.getMaxHealth());
         this.getNavigation().setCanFloat(true);
         this.xpReward = 50;
+
+        this.head = new LuffyPartEntity(this, "head", 3.6F, 2.9F);
+        this.body = new LuffyPartEntity(this, "body", 6.0F, 5.0F);
+        this.leftArm = new LuffyPartEntity(this, "leftArm", 1.9F, 6.7F);
+        this.rightArm = new LuffyPartEntity(this, "rightArm", 1.9F, 6.7F);
+        this.leftLeg = new LuffyPartEntity(this, "leftLeg", 2.0F, 8.1375F);
+        this.rightLeg = new LuffyPartEntity(this, "rightLeg", 2.0F, 8.1375F);
+        this.subEntities = new LuffyPartEntity[]{this.head, this.body, this.leftArm, this.rightArm, this.leftLeg, this.rightLeg};
     }
 
     public static AttributeModifierMap.MutableAttribute createAttributes() {
@@ -73,17 +107,31 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
     @Override
     protected void registerGoals() {
         //this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.0D, 40, 20.0F));
+        this.goalSelector.addGoal(2, new AnimatableMeleeAttackGoal<GearFiveLuffy, LuffyAttackType>(this, GearFiveLuffy::selectAttackType, 1.0F, true));
         this.goalSelector.addGoal(5, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
         this.goalSelector.addGoal(6, new LookAtGoal(this, PlayerEntity.class, 8.0F));
         this.goalSelector.addGoal(7, new LookRandomlyGoal(this));
         this.targetSelector.addGoal(1, new HurtByTargetGoal(this));
-        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 0, false, false, LIVING_ENTITY_SELECTOR));
+        this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, 0, false, false, LIVING_ENTITY_SELECTOR));
+    }
+
+    private static LuffyAttackType selectAttackType(GearFiveLuffy luffy){
+        return LuffyAttackType.byId(luffy.random.nextInt(4) + 1);
     }
 
     @Override
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(DATA_ID_ATTACK_TARGET, 0);
+        this.entityData.define(DATA_ATTACK_TYPE_ID, (byte)0);
+    }
+
+    @Override
+    public void onSyncedDataUpdated(DataParameter<?> pKey) {
+        super.onSyncedDataUpdated(pKey);
+        if(DATA_ATTACK_TYPE_ID.equals(pKey)){
+            this.startAttackAnimation(this.getCurrentAttackType());
+        }
     }
 
     @Override
@@ -122,6 +170,17 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
     }
 
     @Override
+    public void baseTick() {
+        super.baseTick();
+        if(this.attackAnimationTick > 0){
+            this.attackAnimationTick--;
+        }
+        if(!this.level.isClientSide && this.attackAnimationTick <= 0){
+            this.resetAttackType();
+        }
+    }
+
+    @Override
     public void aiStep() {
         Vector3d deltaMovement = this.getDeltaMovement().multiply(1.0D, 0.6D, 1.0D);
         if (!this.level.isClientSide && this.getActiveAttackTargetId() > 0) {
@@ -150,6 +209,37 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
         // call super
         super.aiStep();
 
+
+        Vector3d[] prevPositions = new Vector3d[this.subEntities.length];
+
+        for(int j = 0; j < this.subEntities.length; ++j) {
+            prevPositions[j] = new Vector3d(this.subEntities[j].getX(), this.subEntities[j].getY(), this.subEntities[j].getZ());
+        }
+
+        this.tickPart(this.head, 0, HEAD_Y_OFFSET, 0, this.yRot);
+        this.tickPart(this.body, 0, BODY_Y_OFFSET, 0, this.yBodyRot);
+        this.tickPart(this.leftArm, -ARM_X_OFFSET, ARM_Y_OFFSET, 0, this.yBodyRot);
+        this.tickPart(this.rightArm, ARM_X_OFFSET, ARM_Y_OFFSET, 0, this.yBodyRot);
+        this.tickPart(this.leftLeg, -LEG_X_OFFSET, 0, 0, this.yBodyRot);
+        this.tickPart(this.rightLeg, LEG_X_OFFSET, 0, 0, this.yBodyRot);
+
+        for(int i = 0; i < this.subEntities.length; ++i) {
+            this.subEntities[i].xo = prevPositions[i].x;
+            this.subEntities[i].yo = prevPositions[i].y;
+            this.subEntities[i].zo = prevPositions[i].z;
+            this.subEntities[i].xOld = prevPositions[i].x;
+            this.subEntities[i].yOld = prevPositions[i].y;
+            this.subEntities[i].zOld = prevPositions[i].z;
+        }
+    }
+
+    private void tickPart(LuffyPartEntity pPart, double xOffset, double yOffset, double zOffset, float yRot) {
+        float yBodyRotRadians = -yRot * LogicHelper.TO_RADIANS;
+        float cos = MathHelper.cos(yBodyRotRadians);
+        float sin = MathHelper.sin(yBodyRotRadians);
+        double x = xOffset * (double)cos + zOffset * (double)sin;
+        double z = zOffset * (double)cos - xOffset * (double)sin;
+        pPart.setPos(this.getX() + x, this.getY() + yOffset, this.getZ() + z);
     }
 
     @Override
@@ -167,21 +257,22 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
         if (this.destroyBlocksTick > 0) {
             --this.destroyBlocksTick;
             if (this.destroyBlocksTick == 0 && ForgeEventFactory.getMobGriefingEvent(this.level, this)) {
-                int yFloor = MathHelper.floor(this.getY());
-                int xFloor = MathHelper.floor(this.getX());
-                int zFloor = MathHelper.floor(this.getZ());
+                AxisAlignedBB pArea = this.getBoundingBox();
+                int minX = MathHelper.floor(pArea.minX);
+                int minY = MathHelper.floor(pArea.minY);
+                int minZ = MathHelper.floor(pArea.minZ);
+                int maxX = MathHelper.floor(pArea.maxX);
+                int maxY = MathHelper.floor(pArea.maxY);
+                int maxZ = MathHelper.floor(pArea.maxZ);
                 boolean destroyedBlocks = false;
 
-                for(int xOffset = -1; xOffset <= 1; ++xOffset) {
-                    for(int zOffset = -1; zOffset <= 1; ++zOffset) {
-                        for(int yOffset = 0; yOffset <= 3; ++yOffset) {
-                            int x = xFloor + xOffset;
-                            int y = yFloor + yOffset;
-                            int z = zFloor + zOffset;
-                            BlockPos blockpos = new BlockPos(x, y, z);
-                            BlockState blockstate = this.level.getBlockState(blockpos);
-                            if (blockstate.canEntityDestroy(this.level, blockpos, this) && ForgeEventFactory.onEntityDestroyBlock(this, blockpos, blockstate)) {
-                                destroyedBlocks = this.level.destroyBlock(blockpos, true, this) || destroyedBlocks;
+                for(int x = minX; x <= maxX; ++x) {
+                    for(int z = minZ; z <= maxZ; ++z) {
+                        for(int y = minY; y <= maxY; ++y) {
+                            BlockPos blockPos = new BlockPos(x, y, z);
+                            BlockState stateAtPos = this.level.getBlockState(blockPos);
+                            if (stateAtPos.canEntityDestroy(this.level, blockPos, this) && ForgeEventFactory.onEntityDestroyBlock(this, blockPos, stateAtPos)) {
+                                destroyedBlocks = this.level.destroyBlock(blockPos, true, this) || destroyedBlocks;
                             }
                         }
                     }
@@ -250,19 +341,17 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
     }
      */
 
+    public boolean hurt(LuffyPartEntity pPart, DamageSource pSource, float pDamage) {
+        return this.reallyHurt(pSource, pDamage);
+    }
+
+    protected boolean reallyHurt(DamageSource pSource, float pAmount) {
+        return super.hurt(pSource, pAmount);
+    }
+
     @Override
     public boolean hurt(DamageSource pSource, float pAmount) {
-        if (this.isInvulnerableTo(pSource)) {
-            return false;
-        } else if (pSource != DamageSource.DROWN && !(pSource.getEntity() instanceof GearFiveLuffy)) {
-            if (this.destroyBlocksTick <= 0) {
-                this.destroyBlocksTick = 20;
-            }
-
-            return super.hurt(pSource, pAmount);
-        } else {
-            return false;
-        }
+        return this.hurt(this.body, pSource, pAmount);
     }
 
     @Override
@@ -318,6 +407,16 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
         return super.canBeAffected(pPotioneffect);
     }
 
+    @Override
+    public boolean isMultipartEntity() {
+        return true;
+    }
+
+    @Override
+    public PartEntity<?>[] getParts() {
+        return this.subEntities;
+    }
+
     /**
      * Methods for {@link IAnimatable}
      */
@@ -328,7 +427,24 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
     }
 
     private <T extends GearFiveLuffy> PlayState predicate(AnimationEvent<T> tAnimationEvent) {
-        if(tAnimationEvent.isMoving()){
+        if(this.isAttackAnimationInProgress()){
+            switch (this.getCurrentAttackType()){
+                case LIGHTNING:
+                    tAnimationEvent.getController().setAnimation(STORM_ANIM);
+                    break;
+                case GROUND_PUNCH:
+                    tAnimationEvent.getController().setAnimation(GROUND_PUNCH_ANIM);
+                    break;
+                case SHOCKWAVE:
+                    tAnimationEvent.getController().setAnimation(SHOCKWAVE_ANIM);
+                    break;
+                case GIANT_FIST:
+                    tAnimationEvent.getController().setAnimation(GIANT_FIST_ANIM);
+                    break;
+                default:
+                    break;
+            }
+        } else if(tAnimationEvent.isMoving() || this.getActiveAttackTargetId() != 0){
             tAnimationEvent.getController().setAnimation(WALK_ANIM);
         } else{
             tAnimationEvent.getController().setAnimation(IDLE_ANIM);
@@ -340,4 +456,55 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable {
     public AnimationFactory getFactory() {
         return this.animationFactory;
     }
+
+    /**
+     * {@link AnimatableMeleeAttack} methods
+     */
+
+    @Override
+    public int getAttackAnimationTick() {
+        return this.attackAnimationTick;
+    }
+
+    @Override
+    public void setAttackAnimationTick(int attackAnimationTick) {
+        this.attackAnimationTick = attackAnimationTick;
+    }
+
+    @Override
+    public LuffyAttackType getCurrentAttackType() {
+        return !this.level.isClientSide ? this.currentAttackType : LuffyAttackType.byId(this.entityData.get(DATA_ATTACK_TYPE_ID));
+    }
+
+    @Override
+    public void setCurrentAttackType(LuffyAttackType attackType) {
+        this.currentAttackType = attackType;
+        this.entityData.set(DATA_ATTACK_TYPE_ID, (byte)attackType.getId());
+    }
+
+    @Override
+    public LuffyAttackType getDefaultAttackType() {
+        return LuffyAttackType.NONE;
+    }
+
+    @Override
+    public void performAttack(LivingEntity target, double distanceToTarget) {
+        switch (this.getCurrentAttackType()){
+            case LIGHTNING:
+                LuffyBoss.LOGGER.info("{} performing Lightning Storm attack!", this);
+                break;
+            case GROUND_PUNCH:
+                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 7.0F);
+                break;
+            case SHOCKWAVE:
+                LuffyBoss.LOGGER.info("{} performing Shockwave attack!", this);
+                break;
+            case GIANT_FIST:
+                LuffyBoss.LOGGER.info("{} performing Giant Fist attack!", this);
+                break;
+            default:
+                break;
+        }
+    }
+
 }

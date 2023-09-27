@@ -3,7 +3,6 @@ package me.infamous.luffy_boss.common.registry;
 import me.infamous.luffy_boss.LuffyBoss;
 import me.infamous.luffy_boss.common.entity.GearFiveLuffy;
 import me.infamous.luffy_boss.common.entity.GiantFistEntity;
-import net.minecraft.block.Blocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
@@ -19,9 +18,7 @@ public class LBEntityTypes {
 
     public static final RegistryObject<EntityType<GearFiveLuffy>> GEAR_FIVE_LUFFY = register("gear_five_luffy",
             EntityType.Builder.of(GearFiveLuffy::new, EntityClassification.MONSTER)
-                    .fireImmune()
-                    .immuneTo(Blocks.WITHER_ROSE)
-                    .sized(0.9F, 3.5F)
+                    .sized(6.0F, 17.0F)
                     .clientTrackingRange(10));
 
     public static final RegistryObject<EntityType<GiantFistEntity>> GIANT_FIST = register("giant_fist",
