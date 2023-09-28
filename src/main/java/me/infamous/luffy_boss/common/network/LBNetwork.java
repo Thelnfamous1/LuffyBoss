@@ -7,6 +7,8 @@ import net.minecraftforge.fml.network.NetworkRegistry;
 import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
+import javax.annotation.Nullable;
+
 public class LBNetwork {
     private static final ResourceLocation KEY = new ResourceLocation(LuffyBoss.MODID, "main");
 
@@ -24,7 +26,7 @@ public class LBNetwork {
 
     }
 
-    public static void syncAOEAttack(PacketDistributor.PacketTarget target, double pX, double pY, double pZ, float pSize, Vector3d knockbackVec) {
+    public static void syncAOEAttack(PacketDistributor.PacketTarget target, double pX, double pY, double pZ, float pSize, @Nullable Vector3d knockbackVec) {
         CHANNEL.send(target, new ClientboundAOEAttackPacket(pX, pY, pZ, pSize, knockbackVec));
     }
 }

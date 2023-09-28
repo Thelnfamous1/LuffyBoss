@@ -3,6 +3,7 @@ package me.infamous.luffy_boss.common.registry;
 import me.infamous.luffy_boss.LuffyBoss;
 import me.infamous.luffy_boss.common.entity.GearFiveLuffy;
 import me.infamous.luffy_boss.common.entity.GiantFistEntity;
+import me.infamous.luffy_boss.common.entity.StormEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
@@ -23,9 +24,16 @@ public class LBEntityTypes {
 
     public static final RegistryObject<EntityType<GiantFistEntity>> GIANT_FIST = register("giant_fist",
             EntityType.Builder.<GiantFistEntity>of(GiantFistEntity::new, EntityClassification.MISC)
-                    .sized(0.3125F, 0.3125F)
+                    .sized(10.0F, 10.0F)
                     .clientTrackingRange(4)
                     .updateInterval(10));
+
+    public static final RegistryObject<EntityType<StormEntity>> STORM = register("storm",
+            EntityType.Builder.<StormEntity>of(StormEntity::new, EntityClassification.MISC)
+                    .fireImmune()
+                    .sized(10.0F, 10.0F)
+                    .clientTrackingRange(10)
+                    .updateInterval(Integer.MAX_VALUE));
 
     private static <T extends Entity> RegistryObject<EntityType<T>> register(String pKey, EntityType.Builder<T> pBuilder) {
         return ENTITY_TYPES.register(pKey, () -> pBuilder.build(new ResourceLocation(LuffyBoss.MODID, pKey).toString()));

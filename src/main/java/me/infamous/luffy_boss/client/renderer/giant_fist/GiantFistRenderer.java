@@ -1,0 +1,25 @@
+package me.infamous.luffy_boss.client.renderer.giant_fist;
+
+import com.mojang.blaze3d.matrix.MatrixStack;
+import com.mojang.blaze3d.vertex.IVertexBuilder;
+import me.infamous.luffy_boss.common.entity.GiantFistEntity;
+import net.minecraft.client.renderer.IRenderTypeBuffer;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.util.ResourceLocation;
+import software.bernie.geckolib3.renderers.geo.GeoProjectilesRenderer;
+
+public class GiantFistRenderer extends GeoProjectilesRenderer<GiantFistEntity> {
+    public GiantFistRenderer(EntityRendererManager renderManager) {
+        super(renderManager, new GiantFistModel());
+        this.widthScale = 16.0F;
+        this.heightScale = 16.0F;
+    }
+
+    @Override
+    public RenderType getRenderType(GiantFistEntity animatable, float partialTicks, MatrixStack stack,
+                                    IRenderTypeBuffer renderTypeBuffer, IVertexBuilder vertexBuilder, int packedLightIn,
+                                    ResourceLocation textureLocation) {
+        return RenderType.entityTranslucent(this.getTextureLocation(animatable));
+    }
+}

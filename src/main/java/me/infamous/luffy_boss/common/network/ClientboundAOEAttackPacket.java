@@ -8,6 +8,7 @@ import net.minecraftforge.fml.network.NetworkDirection;
 import net.minecraftforge.fml.network.NetworkEvent;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -20,8 +21,11 @@ public class ClientboundAOEAttackPacket {
     private final float knockbackY;
     private final float knockbackZ;
 
-    public ClientboundAOEAttackPacket(double pX, double pY, double pZ, float pPower, Vector3d knockbackVec) {
-        this(pX, pY, pZ, pPower, (float) knockbackVec.x, (float) knockbackVec.y, (float) knockbackVec.z);
+    public ClientboundAOEAttackPacket(double pX, double pY, double pZ, float pPower, @Nullable Vector3d knockbackVec) {
+        this(pX, pY, pZ, pPower,
+                knockbackVec != null ? (float) knockbackVec.x : 0,
+                knockbackVec != null ? (float) knockbackVec.y : 0,
+                knockbackVec != null ? (float) knockbackVec.z : 0);
     }
 
     public ClientboundAOEAttackPacket(double pX, double pY, double pZ, float pPower, float knockbackX, float knockbackY, float knockbackZ) {

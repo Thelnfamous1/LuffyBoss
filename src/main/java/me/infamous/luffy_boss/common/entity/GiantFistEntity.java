@@ -1,34 +1,33 @@
 package me.infamous.luffy_boss.common.entity;
 
+import me.infamous.luffy_boss.common.LogicHelper;
 import me.infamous.luffy_boss.common.registry.LBEntityTypes;
-import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.DamagingProjectileEntity;
-import net.minecraft.fluid.FluidState;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
-import net.minecraft.network.datasync.DataParameter;
-import net.minecraft.network.datasync.DataSerializers;
-import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.potion.EffectInstance;
-import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.IndirectEntityDamageSource;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.EntityRayTraceResult;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.world.Difficulty;
-import net.minecraft.world.Explosion;
-import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
-import net.minecraftforge.event.ForgeEventFactory;
+import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.NetworkHooks;
+import software.bernie.geckolib3.core.IAnimatable;
+import software.bernie.geckolib3.core.PlayState;
+import software.bernie.geckolib3.core.controller.AnimationController;
+import software.bernie.geckolib3.core.event.predicate.AnimationEvent;
+import software.bernie.geckolib3.core.manager.AnimationData;
+import software.bernie.geckolib3.core.manager.AnimationFactory;
+import software.bernie.geckolib3.util.GeckoLibUtil;
 
-public class GiantFistEntity extends DamagingProjectileEntity implements IEntityAdditionalSpawnData {
+public class GiantFistEntity extends DamagingProjectileEntity implements IEntityAdditionalSpawnData, IAnimatable {
+
+   private final AnimationFactory animationFactory = GeckoLibUtil.createFactory(this);
 
    public GiantFistEntity(EntityType<? extends GiantFistEntity> entityType, World world) {
       super(entityType, world);
@@ -59,56 +58,21 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
    }
 
    @Override
-   public float getBlockExplosionResistance(Explosion pExplosion, IBlockReader pLevel, BlockPos pPos, BlockState pBlockState, FluidState pFluidState, float pExplosionPower) {
-      return pBlockState.canEntityDestroy(pLevel, pPos, this) ? Math.min(0.8F, pExplosionPower) : pExplosionPower;
-   }
-
-   @Override
-   protected void onHitEntity(EntityRayTraceResult pResult) {
-      super.onHitEntity(pResult);
-      if (!this.level.isClientSide) {
-         Entity target = pResult.getEntity();
-         Entity owner = this.getOwner();
-         boolean hurt;
-         if (owner instanceof LivingEntity) {
-            LivingEntity shooter = (LivingEntity)owner;
-            hurt = target.hurt(damageSource(this, shooter), 8.0F);
-            if (hurt) {
-               if (target.isAlive()) {
-                  this.doEnchantDamageEffects(shooter, target);
-               } else {
-                  shooter.heal(5.0F);
-               }
-            }
-         } else {
-            hurt = target.hurt(DamageSource.MAGIC, 5.0F);
-         }
-
-         if (hurt && target instanceof LivingEntity) {
-            int effectDurationMultiplier = 0;
-            if (this.level.getDifficulty() == Difficulty.NORMAL) {
-               effectDurationMultiplier = 10;
-            } else if (this.level.getDifficulty() == Difficulty.HARD) {
-               effectDurationMultiplier = 40;
-            }
-
-            if (effectDurationMultiplier > 0) {
-               ((LivingEntity)target).addEffect(new EffectInstance(Effects.WITHER, 20 * effectDurationMultiplier, 1));
-            }
-         }
-
-      }
-   }
-
-   @Override
    protected void onHit(RayTraceResult pResult) {
       super.onHit(pResult);
       if (!this.level.isClientSide) {
-         Explosion.Mode explosion$mode = ForgeEventFactory.getMobGriefingEvent(this.level, this.getOwner()) ? Explosion.Mode.DESTROY : Explosion.Mode.NONE;
-         this.level.explode(this, this.getX(), this.getY(), this.getZ(), 1.0F, false, explosion$mode);
+         LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this.getOwner(), null, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z, 5.0F);
          this.remove();
       }
 
+   }
+
+   @Override
+   protected boolean canHitEntity(Entity entity) {
+      if(entity instanceof PartEntity && ((PartEntity<?>)entity).getParent() == this.getOwner()){
+         return false;
+      }
+      return super.canHitEntity(entity);
    }
 
    @Override
@@ -153,5 +117,23 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
       this.xPower = additionalData.readShort() / 8000.0D;
       this.yPower = additionalData.readShort() / 8000.0D;
       this.zPower = additionalData.readShort() / 8000.0D;
+   }
+
+   /**
+    * Methods for {@link IAnimatable}
+    */
+
+   @Override
+   public void registerControllers(AnimationData data) {
+      data.addAnimationController(new AnimationController<>(this, "controller", 0, this::predicate));
+   }
+
+   private <T extends GiantFistEntity> PlayState predicate(AnimationEvent<T> event) {
+      return PlayState.STOP;
+   }
+
+   @Override
+   public AnimationFactory getFactory() {
+      return this.animationFactory;
    }
 }

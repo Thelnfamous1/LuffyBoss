@@ -8,7 +8,6 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -55,7 +54,9 @@ public class AreaOfEffectAttack {
    }
 
    public static DamageSource aoeAttack(@Nullable LivingEntity pLivingEntity) {
-      return pLivingEntity != null ? (new EntityDamageSource("explosion.player", pLivingEntity)).setScalesWithDifficulty().setExplosion() : (new DamageSource("explosion")).setScalesWithDifficulty().setExplosion();
+      if(pLivingEntity instanceof PlayerEntity) return DamageSource.playerAttack((PlayerEntity) pLivingEntity);
+      else if(pLivingEntity != null) return DamageSource.mobAttack(pLivingEntity);
+      else return DamageSource.GENERIC;
    }
 
    public static float getSeenPercent(Vector3d sourcePos, Entity target) {
@@ -107,8 +108,8 @@ public class AreaOfEffectAttack {
 
       for (Entity hitEntity : hitEntities) {
          if (hitEntity.isAlive() && hitEntity instanceof LivingEntity && ((LivingEntity) hitEntity).attackable()) {
-            double d12 = MathHelper.sqrt(hitEntity.distanceToSqr(sourcePos)) / diameter;
-            if (d12 <= 1.0D) {
+            double distanceOverDiameter = MathHelper.sqrt(hitEntity.distanceToSqr(sourcePos)) / diameter;
+            if (distanceOverDiameter <= 1.0D) {
                double xDist = hitEntity.getX() - this.x;
                double yDist = hitEntity.getEyeY() - this.y;
                double zDist = hitEntity.getZ() - this.z;
@@ -118,7 +119,7 @@ public class AreaOfEffectAttack {
                   yDist = yDist / distance;
                   zDist = zDist / distance;
                   double seenPercent = getSeenPercent(sourcePos, hitEntity);
-                  double damageFactor = (1.0D - d12) * seenPercent;
+                  double damageFactor = (1.0D - distanceOverDiameter) * seenPercent;
                   hitEntity.hurt(this.getDamageSource(), (float) calculateDamage(diameter, damageFactor));
 
                   hitEntity.setDeltaMovement(hitEntity.getDeltaMovement().add(xDist * damageFactor, yDist * damageFactor, zDist * damageFactor));

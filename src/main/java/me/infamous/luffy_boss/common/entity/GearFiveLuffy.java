@@ -1,6 +1,5 @@
 package me.infamous.luffy_boss.common.entity;
 
-import me.infamous.luffy_boss.LuffyBoss;
 import me.infamous.luffy_boss.common.LogicHelper;
 import me.infamous.luffy_boss.common.entity.attack.AnimatableMeleeAttack;
 import me.infamous.luffy_boss.common.entity.attack.AnimatableMeleeAttackGoal;
@@ -35,6 +34,7 @@ import net.minecraft.world.BossInfo;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerBossInfo;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.event.ForgeEventFactory;
 import software.bernie.geckolib3.core.IAnimatable;
@@ -324,16 +324,14 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
             this.level.levelEvent(null, 1024, this.blockPosition(), 0);
         }
 
-        double x = this.getX();
-        double y = this.getY() + 3.0D;
-        double z = this.getZ();
-        double xDist = targetX - x;
+        double y = this.getY() + this.getBbHeight();
+        double xDist = 0.0;
         double yDist = targetY - y;
-        double zDist = targetZ - z;
+        double zDist = 0.0;
         GiantFistEntity giantFistEntity = new GiantFistEntity(this.level, this, xDist, yDist, zDist);
         giantFistEntity.setOwner(this);
 
-        giantFistEntity.setPosRaw(x, y, z);
+        giantFistEntity.setPosRaw(targetX, y, targetZ);
         this.level.addFreshEntity(giantFistEntity);
     }
 
@@ -500,17 +498,20 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     public void performAttack(LivingEntity target, double distanceToTarget) {
         switch (this.getCurrentAttackType()){
             case STORM:
-                LuffyBoss.LOGGER.info("{} did Storm attack!", this);
+                StormEntity storm = new StormEntity(this.level, target.getX(), target.getY(), target.getZ());
+                storm.setOwner(this);
+                storm.setRadius(5.0F);
+                storm.setDuration(LuffyAttackType.STORM.getAttackAnimationLength());
+                this.level.addFreshEntity(storm);
                 break;
             case SHOCKWAVE:
-                LuffyBoss.LOGGER.info("{} did Shockwave attack!", this);
+                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 5.0F);
                 break;
             case GROUND_PUNCH:
-                LuffyBoss.LOGGER.info("{} did Ground Punch attack!", this);
-                //LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 7.0F);
+                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 2.5F);
                 break;
             case GIANT_FIST:
-                LuffyBoss.LOGGER.info("{} did Giant Fist attack!", this);
+                this.performRangedAttack(target);
                 break;
             default:
                 break;
