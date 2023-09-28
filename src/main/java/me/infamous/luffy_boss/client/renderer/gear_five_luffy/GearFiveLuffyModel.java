@@ -12,7 +12,7 @@ public class GearFiveLuffyModel extends AnimatedGeoModel<GearFiveLuffy> {
 
     public static final ResourceLocation ANIMATION_LOCATION = new ResourceLocation(LuffyBoss.MODID, "animations/gear_five_luffy.animation.json");
     public static final ResourceLocation MODEL_LOCATION = new ResourceLocation(LuffyBoss.MODID, "geo/gear_five_luffy.geo.json");
-    public static final ResourceLocation TEXTURE_LOCATION = new ResourceLocation(LuffyBoss.MODID, "textures/entity/gear_five_luffy/body.png");
+    public static final ResourceLocation TEXTURE_LOCATION = new ResourceLocation(LuffyBoss.MODID, "textures/entity/gear_five_luffy/gear_five_luffy.png");
 
     @Override
     public ResourceLocation getAnimationFileLocation(GearFiveLuffy animatable) {

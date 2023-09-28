@@ -1,0 +1,91 @@
+{
+	"format_version": "1.12.0",
+	"minecraft:geometry": [
+		{
+			"description": {
+				"identifier": "geometry.lightning_1",
+				"texture_width": 64,
+				"texture_height": 64,
+				"visible_bounds_width": 4,
+				"visible_bounds_height": 3.5,
+				"visible_bounds_offset": [0, 1.25, 0]
+			},
+			"bones": [
+				{
+					"name": "root",
+					"pivot": [0, 0, 0]
+				},
+				{
+					"name": "bone",
+					"parent": "root",
+					"pivot": [0, 9, 0],
+					"cubes": [
+						{"origin": [-6.25, -7, 0], "size": [12.5, 32, 0], "inflate": 0.05, "uv": [0, 32]}
+					]
+				},
+				{
+					"name": "group6",
+					"parent": "root",
+					"pivot": [0, 2, 0],
+					"rotation": [0, 0, 22.5],
+					"cubes": [
+						{"origin": [-16, 2, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0], "mirror": true}
+					]
+				},
+				{
+					"name": "group3",
+					"parent": "root",
+					"pivot": [0, 7, 0],
+					"rotation": [0, 0, 22.5],
+					"cubes": [
+						{"origin": [-16, 7, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0], "mirror": true}
+					]
+				},
+				{
+					"name": "group7",
+					"parent": "root",
+					"pivot": [0, 2, 0],
+					"rotation": [0, 0, -22.5],
+					"mirror": true,
+					"cubes": [
+						{"origin": [-16, 2, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0], "mirror": false}
+					]
+				},
+				{
+					"name": "group2",
+					"parent": "root",
+					"pivot": [0, 7, 0],
+					"rotation": [0, 0, -22.5],
+					"mirror": true,
+					"cubes": [
+						{"origin": [-16, 7, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0], "mirror": false}
+					]
+				},
+				{
+					"name": "group5",
+					"parent": "root",
+					"pivot": [0, -2, 0],
+					"cubes": [
+						{"origin": [-16, -2, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0], "mirror": true}
+					]
+				},
+				{
+					"name": "group4",
+					"parent": "root",
+					"pivot": [0, 4, 0],
+					"cubes": [
+						{"origin": [-16, 4, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0]}
+					]
+				},
+				{
+					"name": "group",
+					"parent": "root",
+					"pivot": [0, 10, 0],
+					"cubes": [
+						{"origin": [-16, 10, -15.5], "size": [32, 0, 31], "inflate": 0.025, "uv": [-31, 0]}
+					]
+				}
+			]
+		}
+	]
+}

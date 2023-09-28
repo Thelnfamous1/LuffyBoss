@@ -6,9 +6,9 @@
 				"identifier": "geometry.custom.model",
 				"texture_width": 128,
 				"texture_height": 128,
-				"visible_bounds_width": 43,
-				"visible_bounds_height": 15.5,
-				"visible_bounds_offset": [0, 6.25, 0]
+				"visible_bounds_width": 14,
+				"visible_bounds_height": 23.5,
+				"visible_bounds_offset": [0, 10.25, 0]
 			},
 			"bones": [
 				{
@@ -140,7 +140,7 @@
 							"pivot": [-70.8, 208.2338, -20.2471],
 							"rotation": [-45, 0, 0],
 							"uv": {
-								"north": {"uv": [44, 58], "uv_size": [40, 18]},
+								"north": {"uv": [91.5, 104.25], "uv_size": [20.75, 8.25]},
 								"east": {"uv": [0, 0], "uv_size": [0, 46]},
 								"south": {"uv": [128, 128], "uv_size": [0, 0]},
 								"west": {"uv": [0, 0], "uv_size": [0, 46]},
@@ -158,7 +158,7 @@
 								"east": {"uv": [0, 0], "uv_size": [0, 46]},
 								"south": {"uv": [50, 0], "uv_size": [-50, 0]},
 								"west": {"uv": [0, 0], "uv_size": [0, 46]},
-								"up": {"uv": [84, 86.5], "uv_size": [-40, -12]},
+								"up": {"uv": [112.5, 112.25], "uv_size": [-20.75, 8.25]},
 								"down": {"uv": [128, 128], "uv_size": [0, 0]}
 							}
 						},
@@ -168,7 +168,7 @@
 							"pivot": [-70.8, 208.2338, -20.2471],
 							"rotation": [-22.5, 0, 0],
 							"uv": {
-								"north": {"uv": [44, 40.5], "uv_size": [40, 18]},
+								"north": {"uv": [91.5, 96], "uv_size": [20.75, 8.25]},
 								"east": {"uv": [0, 0], "uv_size": [0, 46]},
 								"south": {"uv": [128, 128], "uv_size": [0, 0]},
 								"west": {"uv": [0, 0], "uv_size": [0, 46]},

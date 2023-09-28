@@ -5,5 +5,4 @@ import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.FORGE, modid = LuffyBoss.MODID)
 public class ForgeEventHandler {
-
 }

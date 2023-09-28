@@ -4,7 +4,7 @@ import me.infamous.luffy_boss.common.LogicHelper;
 
 public enum LuffyAttackType implements AnimatableMeleeAttack.AttackType {
     NONE(0, 0, 0),
-    LIGHTNING(1, LogicHelper.secondsToTicks(0.75D), LogicHelper.secondsToTicks(1.5D)),
+    STORM(1, LogicHelper.secondsToTicks(0.75D), LogicHelper.secondsToTicks(1.5D)),
     SHOCKWAVE(2, LogicHelper.secondsToTicks(1.2D), LogicHelper.secondsToTicks(2.3333D)),
     GROUND_PUNCH(3, LogicHelper.secondsToTicks(0.75D), LogicHelper.secondsToTicks(1.9583D)),
     GIANT_FIST(4, LogicHelper.secondsToTicks(2.0D), LogicHelper.secondsToTicks(4.0D));

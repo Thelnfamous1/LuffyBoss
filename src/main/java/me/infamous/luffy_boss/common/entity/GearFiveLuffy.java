@@ -23,7 +23,9 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.util.*;
+import net.minecraft.util.DamageSource;
+import net.minecraft.util.SoundEvent;
+import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -33,7 +35,6 @@ import net.minecraft.world.BossInfo;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerBossInfo;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.entity.PartEntity;
 import net.minecraftforge.event.ForgeEventFactory;
 import software.bernie.geckolib3.core.IAnimatable;
@@ -67,10 +68,10 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     private final AnimationFactory animationFactory = GeckoLibUtil.createFactory(this);
     protected static final AnimationBuilder IDLE_ANIM = new AnimationBuilder().addAnimation("idle", ILoopType.EDefaultLoopTypes.LOOP);
     protected static final AnimationBuilder WALK_ANIM = new AnimationBuilder().addAnimation("walk", ILoopType.EDefaultLoopTypes.LOOP);
-    protected static final AnimationBuilder STORM_ANIM = new AnimationBuilder().addAnimation("storm", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
+    protected static final AnimationBuilder STORM_ANIM = new AnimationBuilder().addAnimation("storm", ILoopType.EDefaultLoopTypes.LOOP);
     protected static final AnimationBuilder GROUND_PUNCH_ANIM = new AnimationBuilder().addAnimation("Attack3", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
     protected static final AnimationBuilder GIANT_FIST_ANIM = new AnimationBuilder().addAnimation("Attack4", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
-    protected static final AnimationBuilder SHOCKWAVE_ANIM = new AnimationBuilder().addAnimation("shockwave", ILoopType.EDefaultLoopTypes.PLAY_ONCE);
+    protected static final AnimationBuilder SHOCKWAVE_ANIM = new AnimationBuilder().addAnimation("shockwave", ILoopType.EDefaultLoopTypes.LOOP);
     private int attackAnimationTick;
     private LuffyAttackType currentAttackType;
     private final LuffyPartEntity[] subEntities;
@@ -182,6 +183,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
 
     @Override
     public void aiStep() {
+        /*
         Vector3d deltaMovement = this.getDeltaMovement().multiply(1.0D, 0.6D, 1.0D);
         if (!this.level.isClientSide && this.getActiveAttackTargetId() > 0) {
             Entity activeAttackTarget = this.level.getEntity(this.getActiveAttackTargetId());
@@ -205,6 +207,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
         if (getHorizontalDistanceSqr(deltaMovement) > 0.05D) {
             this.yRot = (float) MathHelper.atan2(deltaMovement.z, deltaMovement.x) * (180F / (float)Math.PI) - 90.0F;
         }
+         */
 
         // call super
         super.aiStep();
@@ -407,6 +410,12 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
         return super.canBeAffected(pPotioneffect);
     }
 
+    // Need to return false so the regular hitbox is not used for hit detection
+    @Override
+    public boolean isPickable() {
+        return false;
+    }
+
     @Override
     public boolean isMultipartEntity() {
         return true;
@@ -426,28 +435,28 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
         data.addAnimationController(new AnimationController<>(this, "controller", 0, this::predicate));
     }
 
-    private <T extends GearFiveLuffy> PlayState predicate(AnimationEvent<T> tAnimationEvent) {
+    private <T extends GearFiveLuffy> PlayState predicate(AnimationEvent<T> event) {
         if(this.isAttackAnimationInProgress()){
             switch (this.getCurrentAttackType()){
-                case LIGHTNING:
-                    tAnimationEvent.getController().setAnimation(STORM_ANIM);
-                    break;
-                case GROUND_PUNCH:
-                    tAnimationEvent.getController().setAnimation(GROUND_PUNCH_ANIM);
+                case STORM:
+                    event.getController().setAnimation(STORM_ANIM);
                     break;
                 case SHOCKWAVE:
-                    tAnimationEvent.getController().setAnimation(SHOCKWAVE_ANIM);
+                    event.getController().setAnimation(SHOCKWAVE_ANIM);
+                    break;
+                case GROUND_PUNCH:
+                    event.getController().setAnimation(GROUND_PUNCH_ANIM);
                     break;
                 case GIANT_FIST:
-                    tAnimationEvent.getController().setAnimation(GIANT_FIST_ANIM);
+                    event.getController().setAnimation(GIANT_FIST_ANIM);
                     break;
                 default:
                     break;
             }
-        } else if(tAnimationEvent.isMoving() || this.getActiveAttackTargetId() != 0){
-            tAnimationEvent.getController().setAnimation(WALK_ANIM);
+        } else if(event.isMoving()){
+            event.getController().setAnimation(WALK_ANIM);
         } else{
-            tAnimationEvent.getController().setAnimation(IDLE_ANIM);
+            event.getController().setAnimation(IDLE_ANIM);
         }
         return PlayState.CONTINUE;
     }
@@ -490,17 +499,18 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     @Override
     public void performAttack(LivingEntity target, double distanceToTarget) {
         switch (this.getCurrentAttackType()){
-            case LIGHTNING:
-                LuffyBoss.LOGGER.info("{} performing Lightning Storm attack!", this);
-                break;
-            case GROUND_PUNCH:
-                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 7.0F);
+            case STORM:
+                LuffyBoss.LOGGER.info("{} did Storm attack!", this);
                 break;
             case SHOCKWAVE:
-                LuffyBoss.LOGGER.info("{} performing Shockwave attack!", this);
+                LuffyBoss.LOGGER.info("{} did Shockwave attack!", this);
+                break;
+            case GROUND_PUNCH:
+                LuffyBoss.LOGGER.info("{} did Ground Punch attack!", this);
+                //LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 7.0F);
                 break;
             case GIANT_FIST:
-                LuffyBoss.LOGGER.info("{} performing Giant Fist attack!", this);
+                LuffyBoss.LOGGER.info("{} did Giant Fist attack!", this);
                 break;
             default:
                 break;
