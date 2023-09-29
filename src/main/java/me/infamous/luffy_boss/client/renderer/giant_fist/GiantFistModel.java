@@ -1,7 +1,7 @@
 package me.infamous.luffy_boss.client.renderer.giant_fist;
 
 import me.infamous.luffy_boss.LuffyBoss;
-import me.infamous.luffy_boss.common.entity.GiantFistEntity;
+import me.infamous.luffy_boss.common.entity.attack.GiantFistEntity;
 import net.minecraft.util.ResourceLocation;
 import software.bernie.geckolib3.model.AnimatedGeoModel;
 

@@ -3,6 +3,7 @@ package me.infamous.luffy_boss.common;
 import me.infamous.luffy_boss.common.entity.attack.AreaOfEffectAttack;
 import me.infamous.luffy_boss.common.network.LBNetwork;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.DamageSource;
 import net.minecraft.world.server.ServerWorld;
@@ -34,5 +35,10 @@ public class LogicHelper {
         }
 
         return areaOfEffectAttack;
+    }
+
+    public static LivingEntity getLivingEntity(@Nullable Entity entity) {
+       if(entity instanceof LivingEntity) return (LivingEntity) entity;
+       return null;
     }
 }

@@ -1,4 +1,4 @@
-package me.infamous.luffy_boss.common.entity;
+package me.infamous.luffy_boss.common.entity.attack;
 
 import me.infamous.luffy_boss.common.LogicHelper;
 import me.infamous.luffy_boss.common.registry.LBEntityTypes;

@@ -1,9 +1,11 @@
 {
   "required": true,
-  "package": "${project.group}.mixin",
+  "package": "me.infamous.luffy_boss.mixin",
   "compatibilityLevel": "JAVA_8",
   "refmap": "${mod_id}.refmap.json",
-  "mixins": [],
+  "mixins": [
+    "MeleeAttackGoalAccess"
+  ],
   "client": [],
   "minVersion": "0.8"
 }

@@ -1,7 +1,7 @@
 package me.infamous.luffy_boss.client.renderer.storm;
 
 import me.infamous.luffy_boss.LuffyBoss;
-import me.infamous.luffy_boss.common.entity.StormEntity;
+import me.infamous.luffy_boss.common.entity.attack.StormEntity;
 import net.minecraft.util.ResourceLocation;
 import software.bernie.geckolib3.model.AnimatedGeoModel;
 

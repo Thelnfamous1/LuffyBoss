@@ -1,6 +1,7 @@
 package me.infamous.luffy_boss.common.entity.attack;
 
 import me.infamous.luffy_boss.common.LogicHelper;
+import me.infamous.luffy_boss.common.entity.ai.AnimatableMeleeAttack;
 
 public enum LuffyAttackType implements AnimatableMeleeAttack.AttackType {
     NONE(0, 0, 0),

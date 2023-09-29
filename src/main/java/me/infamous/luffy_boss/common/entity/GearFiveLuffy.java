@@ -1,9 +1,13 @@
 package me.infamous.luffy_boss.common.entity;
 
 import me.infamous.luffy_boss.common.LogicHelper;
-import me.infamous.luffy_boss.common.entity.attack.AnimatableMeleeAttack;
-import me.infamous.luffy_boss.common.entity.attack.AnimatableMeleeAttackGoal;
+import me.infamous.luffy_boss.common.entity.ai.AnimatableMeleeAttack;
+import me.infamous.luffy_boss.common.entity.ai.AnimatableMeleeAttackGoal;
+import me.infamous.luffy_boss.common.entity.ai.controller.AttackingLookController;
+import me.infamous.luffy_boss.common.entity.ai.controller.AttackingMoveController;
+import me.infamous.luffy_boss.common.entity.attack.GiantFistEntity;
 import me.infamous.luffy_boss.common.entity.attack.LuffyAttackType;
+import me.infamous.luffy_boss.common.entity.attack.StormEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -53,11 +57,6 @@ import java.util.function.Predicate;
 public class GearFiveLuffy extends MonsterEntity implements IAnimatable, AnimatableMeleeAttack<LuffyAttackType>{
     private static final DataParameter<Integer> DATA_ID_ATTACK_TARGET = EntityDataManager.defineId(GearFiveLuffy.class, DataSerializers.INT);
     private static final DataParameter<Byte> DATA_ATTACK_TYPE_ID = EntityDataManager.defineId(GearFiveLuffy.class, DataSerializers.BYTE);
-    public static final double ARM_X_OFFSET = 3.4375;
-    public static final double ARM_Y_OFFSET = 5.3857;
-    public static final double BODY_Y_OFFSET = 5.56;
-    public static final double HEAD_Y_OFFSET = 12.7;
-    public static final double LEG_X_OFFSET = 1.25;
     private int destroyBlocksTick;
     private final ServerBossInfo bossEvent = (ServerBossInfo)(new ServerBossInfo(
             this.getDisplayName(),
@@ -74,27 +73,32 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     protected static final AnimationBuilder SHOCKWAVE_ANIM = new AnimationBuilder().addAnimation("shockwave", ILoopType.EDefaultLoopTypes.LOOP);
     private int attackAnimationTick;
     private LuffyAttackType currentAttackType;
-    private final LuffyPartEntity[] subEntities;
-    private final LuffyPartEntity head;
-    private final LuffyPartEntity body;
-    private final LuffyPartEntity leftArm;
-    private final LuffyPartEntity rightArm;
-    private final LuffyPartEntity leftLeg;
-    private final LuffyPartEntity rightLeg;
+    private final MultipartController<GearFiveLuffy, LuffyPartEntity> multipartController;
 
     public GearFiveLuffy(EntityType<? extends GearFiveLuffy> entityType, World world) {
         super(entityType, world);
         this.setHealth(this.getMaxHealth());
         this.getNavigation().setCanFloat(true);
+        this.moveControl = new AttackingMoveController<>(this);
+        this.lookControl = new AttackingLookController<>(this);
         this.xpReward = 50;
 
-        this.head = new LuffyPartEntity(this, "head", 3.6F, 2.9F);
-        this.body = new LuffyPartEntity(this, "body", 6.0F, 5.0F);
-        this.leftArm = new LuffyPartEntity(this, "leftArm", 1.9F, 6.7F);
-        this.rightArm = new LuffyPartEntity(this, "rightArm", 1.9F, 6.7F);
-        this.leftLeg = new LuffyPartEntity(this, "leftLeg", 2.0F, 8.1375F);
-        this.rightLeg = new LuffyPartEntity(this, "rightLeg", 2.0F, 8.1375F);
-        this.subEntities = new LuffyPartEntity[]{this.head, this.body, this.leftArm, this.rightArm, this.leftLeg, this.rightLeg};
+        this.multipartController = new MultipartController.Builder<GearFiveLuffy, LuffyPartEntity>()
+                .useNameProvider(LuffyPartEntity::getPartName)
+                .addPart(new LuffyPartEntity(this, "head", 3.6F, 2.9F, false)
+                        .offset(0, 13.1375, 0))
+                .addPart(new LuffyPartEntity(this, "body", 6.0F, 5.0F, true)
+                        .offset(0, 8.1375, 0))
+                .addPart(new LuffyPartEntity(this, "leftArm", 1.9F, 6.7F, true)
+                        .offset(-3.4375, 5.3857, 0))
+                .addPart(new LuffyPartEntity(this, "rightArm", 1.9F, 6.7F, true)
+                        .offset(3.4375, 5.3857, 0))
+                .addPart(new LuffyPartEntity(this, "leftLeg", 2.0F, 8.1375F, true)
+                        .offset(-1.25, 0, 0))
+                .addPart(new LuffyPartEntity(this, "rightLeg", 2.0F, 8.1375F, true)
+                        .offset(1.25, 0, 0))
+                .universalTicker(LuffyPartEntity::ticker)
+                .build();
     }
 
     public static AttributeModifierMap.MutableAttribute createAttributes() {
@@ -211,38 +215,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
 
         // call super
         super.aiStep();
-
-
-        Vector3d[] prevPositions = new Vector3d[this.subEntities.length];
-
-        for(int j = 0; j < this.subEntities.length; ++j) {
-            prevPositions[j] = new Vector3d(this.subEntities[j].getX(), this.subEntities[j].getY(), this.subEntities[j].getZ());
-        }
-
-        this.tickPart(this.head, 0, HEAD_Y_OFFSET, 0, this.yRot);
-        this.tickPart(this.body, 0, BODY_Y_OFFSET, 0, this.yBodyRot);
-        this.tickPart(this.leftArm, -ARM_X_OFFSET, ARM_Y_OFFSET, 0, this.yBodyRot);
-        this.tickPart(this.rightArm, ARM_X_OFFSET, ARM_Y_OFFSET, 0, this.yBodyRot);
-        this.tickPart(this.leftLeg, -LEG_X_OFFSET, 0, 0, this.yBodyRot);
-        this.tickPart(this.rightLeg, LEG_X_OFFSET, 0, 0, this.yBodyRot);
-
-        for(int i = 0; i < this.subEntities.length; ++i) {
-            this.subEntities[i].xo = prevPositions[i].x;
-            this.subEntities[i].yo = prevPositions[i].y;
-            this.subEntities[i].zo = prevPositions[i].z;
-            this.subEntities[i].xOld = prevPositions[i].x;
-            this.subEntities[i].yOld = prevPositions[i].y;
-            this.subEntities[i].zOld = prevPositions[i].z;
-        }
-    }
-
-    private void tickPart(LuffyPartEntity pPart, double xOffset, double yOffset, double zOffset, float yRot) {
-        float yBodyRotRadians = -yRot * LogicHelper.TO_RADIANS;
-        float cos = MathHelper.cos(yBodyRotRadians);
-        float sin = MathHelper.sin(yBodyRotRadians);
-        double x = xOffset * (double)cos + zOffset * (double)sin;
-        double z = zOffset * (double)cos - xOffset * (double)sin;
-        pPart.setPos(this.getX() + x, this.getY() + yOffset, this.getZ() + z);
+        this.multipartController.tick();
     }
 
     @Override
@@ -342,7 +315,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     }
      */
 
-    public boolean hurt(LuffyPartEntity pPart, DamageSource pSource, float pDamage) {
+    public boolean hurt(LuffyPartEntity part, DamageSource pSource, float pDamage) {
         return this.reallyHurt(pSource, pDamage);
     }
 
@@ -352,7 +325,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
 
     @Override
     public boolean hurt(DamageSource pSource, float pAmount) {
-        return this.hurt(this.body, pSource, pAmount);
+        return this.hurt(this.multipartController.getPart("body"), pSource, pAmount);
     }
 
     @Override
@@ -421,7 +394,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
 
     @Override
     public PartEntity<?>[] getParts() {
-        return this.subEntities;
+        return this.multipartController.getParts();
     }
 
     /**
@@ -498,8 +471,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     public void performAttack(LivingEntity target, double distanceToTarget) {
         switch (this.getCurrentAttackType()){
             case STORM:
-                StormEntity storm = new StormEntity(this.level, target.getX(), target.getY(), target.getZ());
-                storm.setOwner(this);
+                StormEntity storm = new StormEntity(this.level, this);
                 storm.setRadius(5.0F);
                 storm.setDuration(LuffyAttackType.STORM.getAttackAnimationLength());
                 this.level.addFreshEntity(storm);

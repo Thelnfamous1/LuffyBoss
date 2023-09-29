@@ -1,5 +1,7 @@
-package me.infamous.luffy_boss.common.entity.attack;
+package me.infamous.luffy_boss.common.entity.ai;
 
+import me.infamous.luffy_boss.common.LogicHelper;
+import me.infamous.luffy_boss.mixin.MeleeAttackGoalAccess;
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
@@ -51,8 +53,19 @@ public class AnimatableMeleeAttackGoal<T extends CreatureEntity & AnimatableMele
     }
 
     @Override
+    protected void resetAttackCooldown() {
+        ((MeleeAttackGoalAccess)this).luffy_boss_setTicksUntilNextAttack(
+                this.attacker.getAttackAnimationTick() + this.getAttackInterval());
+    }
+
+    @Override
+    protected int getAttackInterval() {
+        return LogicHelper.secondsToTicks(2);
+    }
+
+    @Override
     public boolean canContinueToUse() {
-        return super.canContinueToUse();
+        return super.canContinueToUse() || (this.attacker.getTarget() != null && this.attacker.isAttackAnimationInProgress());
     }
 
     @Override

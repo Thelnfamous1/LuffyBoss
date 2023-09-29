@@ -1,6 +1,7 @@
-package me.infamous.luffy_boss.common.entity;
+package me.infamous.luffy_boss.common.entity.attack;
 
 import com.google.common.collect.Maps;
+import me.infamous.luffy_boss.common.LogicHelper;
 import me.infamous.luffy_boss.common.registry.LBEntityTypes;
 import net.minecraft.block.material.PushReaction;
 import net.minecraft.entity.*;
@@ -27,12 +28,16 @@ import software.bernie.geckolib3.util.GeckoLibUtil;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.UUID;
 
 public class StormEntity extends Entity implements IAnimatable {
    private static final DataParameter<Float> DATA_RADIUS = EntityDataManager.defineId(StormEntity.class, DataSerializers.FLOAT);
    private static final DataParameter<Integer> DATA_COLOR = EntityDataManager.defineId(StormEntity.class, DataSerializers.INT);
-   private static final DataParameter<Boolean> DATA_WAITING = EntityDataManager.defineId(StormEntity.class, DataSerializers.BOOLEAN);
+   private static final DataParameter<Boolean> DATA_ATTACHED_TO_OWNER = EntityDataManager.defineId(StormEntity.class, DataSerializers.BOOLEAN);
+   private static final DataParameter<OptionalInt> DATA_OWNER_ID = EntityDataManager.defineId(StormEntity.class, DataSerializers.OPTIONAL_UNSIGNED_INT);
+   public static final String ATTACHED_TO_OWNER_TAG = "AttachedToOwner";
+
    private final Map<Entity, Integer> victims = Maps.newHashMap();
    private int duration = 600;
    private int waitTime = 20;
@@ -41,7 +46,7 @@ public class StormEntity extends Entity implements IAnimatable {
    private int durationOnUse;
    private float radiusOnUse;
    private float radiusPerTick;
-   private LivingEntity owner;
+   private LivingEntity cachedOwner;
    private UUID ownerUUID;
    private static final AnimationBuilder IDLE_ANIM = new AnimationBuilder().addAnimation("idle", ILoopType.EDefaultLoopTypes.LOOP);
    private final AnimationFactory animationFactory = GeckoLibUtil.createFactory(this);
@@ -57,18 +62,28 @@ public class StormEntity extends Entity implements IAnimatable {
       this.setPos(x, y, z);
    }
 
+   public StormEntity(World world, @Nullable LivingEntity owner, double x, double y, double z) {
+      this(world, x, y, z);
+      this.setOwner(owner);
+   }
+
+   public StormEntity(World world, LivingEntity owner) {
+      this(world, owner, owner.getX(), owner.getY(), owner.getZ());
+      this.entityData.set(DATA_ATTACHED_TO_OWNER, true);
+   }
+
    @Override
    protected void defineSynchedData() {
       this.getEntityData().define(DATA_COLOR, 0);
       this.getEntityData().define(DATA_RADIUS, 0.5F);
-      this.getEntityData().define(DATA_WAITING, false);
+      this.getEntityData().define(DATA_ATTACHED_TO_OWNER, false);
+      this.entityData.define(DATA_OWNER_ID, OptionalInt.empty());
    }
 
    public void setRadius(float pRadius) {
       if (!this.level.isClientSide) {
          this.getEntityData().set(DATA_RADIUS, pRadius);
       }
-
    }
 
    @Override
@@ -96,15 +111,15 @@ public class StormEntity extends Entity implements IAnimatable {
    /**
     * Sets if the radius should be ignored, and the effect should be shown in a single point instead of an area
     */
-   protected void setWaiting(boolean pIgnoreRadius) {
-      this.getEntityData().set(DATA_WAITING, pIgnoreRadius);
+   protected void setAttachedToOwner(boolean pIgnoreRadius) {
+      this.getEntityData().set(DATA_ATTACHED_TO_OWNER, pIgnoreRadius);
    }
 
    /**
     * Returns true if the radius should be ignored, and the effect should be shown in a single point instead of an area
     */
-   public boolean isWaiting() {
-      return this.getEntityData().get(DATA_WAITING);
+   public boolean isAttachedToOwner() {
+      return this.getEntityData().get(DATA_ATTACHED_TO_OWNER);
    }
 
    public int getDuration() {
@@ -115,27 +130,26 @@ public class StormEntity extends Entity implements IAnimatable {
       this.duration = pDuration;
    }
 
+   private boolean hasOwnerId() {
+      return this.entityData.get(DATA_OWNER_ID).isPresent();
+   }
+
    @Override
    public void tick() {
       super.tick();
-      boolean wasWaiting = this.isWaiting();
-      float radius = this.getRadius();
-      if (this.level.isClientSide) {
-         if (wasWaiting) {
-         } else {
+
+      if (this.isAttachedToOwner()) {
+         LivingEntity owner = this.getOwner();
+         if (owner != null) {
+            this.setPos(owner.getX(), owner.getY(), owner.getZ());
+            this.setDeltaMovement(owner.getDeltaMovement());
          }
-      } else {
+      }
+
+      if (!this.level.isClientSide){
+         float radius = this.getRadius();
          if (this.tickCount >= this.waitTime + this.duration) {
             this.remove();
-            return;
-         }
-
-         boolean isWaiting = this.tickCount < this.waitTime;
-         if (wasWaiting != isWaiting) {
-            this.setWaiting(isWaiting);
-         }
-
-         if (isWaiting) {
             return;
          }
 
@@ -207,21 +221,46 @@ public class StormEntity extends Entity implements IAnimatable {
       this.waitTime = pWaitTime;
    }
 
-   public void setOwner(@Nullable LivingEntity pOwner) {
-      this.owner = pOwner;
-      this.ownerUUID = pOwner == null ? null : pOwner.getUUID();
+   public void setOwner(@Nullable LivingEntity owner) {
+      this.cachedOwner = owner;
+      this.ownerUUID = owner == null ? null : owner.getUUID();
+      this.setOwnerId(owner);
+   }
+
+   private void setOwnerId(@Nullable LivingEntity pOwner) {
+      this.entityData.set(DATA_OWNER_ID, pOwner == null ? OptionalInt.empty() : OptionalInt.of(pOwner.getId()));
+   }
+
+   private int getOwnerId() {
+      return this.entityData.get(DATA_OWNER_ID).orElse(0);
    }
 
    @Nullable
    public LivingEntity getOwner() {
-      if (this.owner == null && this.ownerUUID != null && this.level instanceof ServerWorld) {
-         Entity entity = ((ServerWorld)this.level).getEntity(this.ownerUUID);
-         if (entity instanceof LivingEntity) {
-            this.owner = (LivingEntity)entity;
-         }
-      }
+      UUID ownerUUID = this.ownerUUID;
+      if(ownerUUID == null) return null;
 
-      return this.owner;
+      LivingEntity cachedOwner = this.cachedOwner;
+      int ownerId = this.getOwnerId();
+      // return cached owner if not null, not removed from level and its id matches the synced owner id
+      if (cachedOwner != null && !cachedOwner.removed && cachedOwner.getId() == ownerId) {
+         return cachedOwner;
+      }
+      // if on server, find and cache owner from owner UUID, and sync its network id to the client
+      else if (this.level instanceof ServerWorld) {
+         LivingEntity owner = LogicHelper.getLivingEntity(((ServerWorld) this.level).getEntity(this.ownerUUID));
+         this.cachedOwner = owner;
+         this.setOwnerId(owner);
+         return owner;
+      }
+      // if on client, find and cache owner from synced owner id
+      else if(ownerId != 0) {
+         LivingEntity owner = LogicHelper.getLivingEntity(this.level.getEntity(ownerId));
+         this.cachedOwner = owner;
+         return owner;
+      } else {
+         return null;
+      }
    }
 
    @Override
@@ -242,6 +281,8 @@ public class StormEntity extends Entity implements IAnimatable {
          this.setFixedColor(pCompound.getInt("Color"));
       }
 
+      this.setAttachedToOwner(pCompound.getBoolean(ATTACHED_TO_OWNER_TAG));
+
    }
 
    @Override
@@ -260,6 +301,10 @@ public class StormEntity extends Entity implements IAnimatable {
 
       if (this.fixedColor) {
          pCompound.putInt("Color", this.getColor());
+      }
+
+      if(this.isAttachedToOwner()){
+         pCompound.putBoolean(ATTACHED_TO_OWNER_TAG, true);
       }
 
    }

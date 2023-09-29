@@ -1,4 +1,4 @@
-package me.infamous.luffy_boss.common.entity.attack;
+package me.infamous.luffy_boss.common.entity.ai;
 
 import net.minecraft.entity.LivingEntity;
 
