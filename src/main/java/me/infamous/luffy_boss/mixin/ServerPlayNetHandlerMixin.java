@@ -15,7 +15,7 @@ public class ServerPlayNetHandlerMixin {
     @Shadow public ServerPlayerEntity player;
 
     // This is a dirty hack that I used as a last resort due to the headaches Luffy's multipart entities were causing me
-    // Using an event handler for attacking as a player, Luffy's multipart entities can be as far away as over 15 blocks, even though the client says they are 4-5 blocks away!
+    // Luffy's multipart entities can be as far away as over 15 blocks, even though the client says they are 4-5 blocks away!
     @ModifyConstant(method = "handleInteract", constant = @Constant(doubleValue = 36.0D))
     private double modifyMaxInteractDistSqr(double constant, CUseEntityPacket pPacket){
         if(pPacket.getTarget(this.player.getLevel()) instanceof LuffyPartEntity){

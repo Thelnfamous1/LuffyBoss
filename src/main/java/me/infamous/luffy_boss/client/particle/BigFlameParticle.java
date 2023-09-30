@@ -11,20 +11,24 @@ public class BigFlameParticle extends DeceleratingParticle {
       this.scale(10.0F);
    }
 
+   @Override
    public IParticleRenderType getRenderType() {
       return IParticleRenderType.PARTICLE_SHEET_OPAQUE;
    }
 
+   @Override
    public void move(double pX, double pY, double pZ) {
       this.setBoundingBox(this.getBoundingBox().move(pX, pY, pZ));
       this.setLocationFromBoundingbox();
    }
 
+   @Override
    public float getQuadSize(float pScaleFactor) {
       float life = ((float)this.age + pScaleFactor) / (float)this.lifetime;
       return this.quadSize * (1.0F - life * life * 0.5F);
    }
 
+   @Override
    public int getLightColor(float pPartialTick) {
       float life = ((float)this.age + pPartialTick) / (float)this.lifetime;
       life = MathHelper.clamp(life, 0.0F, 1.0F);
@@ -46,6 +50,7 @@ public class BigFlameParticle extends DeceleratingParticle {
          this.sprite = pSprites;
       }
 
+      @Override
       public Particle createParticle(BasicParticleType pType, ClientWorld pLevel, double pX, double pY, double pZ, double pXSpeed, double pYSpeed, double pZSpeed) {
          BigFlameParticle flameparticle = new BigFlameParticle(pLevel, pX, pY, pZ, pXSpeed, pYSpeed, pZSpeed);
          flameparticle.pickSprite(this.sprite);

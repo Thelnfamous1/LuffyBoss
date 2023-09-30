@@ -11,6 +11,7 @@ import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
@@ -53,6 +54,21 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
    public void tick() {
       this.resetRot();
       super.tick();
+
+      AxisAlignedBB boundingBox = this.getBoundingBox();
+      this.level.addParticle(this.getTrailParticle(), boundingBox.minX, this.getY() + 0.5D, boundingBox.minZ, 0.0D, 0.0D, 0.0D);
+      this.level.addParticle(this.getTrailParticle(), boundingBox.minX, this.getY() + 0.5D, boundingBox.maxZ, 0.0D, 0.0D, 0.0D);
+      this.level.addParticle(this.getTrailParticle(), boundingBox.maxX, this.getY() + 0.5D, boundingBox.minZ, 0.0D, 0.0D, 0.0D);
+      this.level.addParticle(this.getTrailParticle(), boundingBox.maxX, this.getY() + 0.5D, boundingBox.maxZ, 0.0D, 0.0D, 0.0D);
+
+
+      double midX = (boundingBox.minX + boundingBox.maxX) * 0.5F;
+      this.level.addParticle(this.getTrailParticle(), midX, this.getY() + 0.5D, boundingBox.minZ, 0.0D, 0.0D, 0.0D);
+      this.level.addParticle(this.getTrailParticle(), midX, this.getY() + 0.5D, boundingBox.maxZ, 0.0D, 0.0D, 0.0D);
+      double midZ = (boundingBox.minZ + boundingBox.maxZ) * 0.5F;
+      this.level.addParticle(this.getTrailParticle(), boundingBox.minX, this.getY() + 0.5D, midZ, 0.0D, 0.0D, 0.0D);
+      this.level.addParticle(this.getTrailParticle(), boundingBox.maxX, this.getY() + 0.5D, midZ, 0.0D, 0.0D, 0.0D);
+
       this.resetRot();
    }
 
