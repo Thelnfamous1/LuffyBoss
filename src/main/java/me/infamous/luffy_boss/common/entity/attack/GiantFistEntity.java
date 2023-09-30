@@ -2,14 +2,15 @@ package me.infamous.luffy_boss.common.entity.attack;
 
 import me.infamous.luffy_boss.common.LogicHelper;
 import me.infamous.luffy_boss.common.registry.LBEntityTypes;
+import me.infamous.luffy_boss.common.registry.LBParticleTypes;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.projectile.DamagingProjectileEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.PacketBuffer;
+import net.minecraft.particles.IParticleData;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.IndirectEntityDamageSource;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
@@ -43,8 +44,9 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
       super(LBEntityTypes.GIANT_FIST.get(), x, y, z, xDist, yDist, zDist, world);
    }
 
-   public static DamageSource damageSource(GiantFistEntity giantFist, Entity pIndirectEntity) {
-      return (new IndirectEntityDamageSource("giantFist", giantFist, pIndirectEntity)).setProjectile();
+   @Override
+   protected IParticleData getTrailParticle() {
+      return LBParticleTypes.BIG_SOUL_FIRE_FLAME.get();
    }
 
    @Override

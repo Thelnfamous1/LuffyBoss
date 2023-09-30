@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import software.bernie.geckolib3.renderers.geo.GeoProjectilesRenderer;
 
 public class GiantFistRenderer extends GeoProjectilesRenderer<GiantFistEntity> {
@@ -14,6 +15,11 @@ public class GiantFistRenderer extends GeoProjectilesRenderer<GiantFistEntity> {
         super(renderManager, new GiantFistModel());
         this.widthScale = 16.0F;
         this.heightScale = 16.0F;
+    }
+
+    @Override
+    protected int getBlockLightLevel(GiantFistEntity pEntity, BlockPos pPos) {
+        return 15;
     }
 
     @Override

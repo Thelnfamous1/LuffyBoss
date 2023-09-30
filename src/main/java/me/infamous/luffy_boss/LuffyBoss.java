@@ -1,6 +1,7 @@
 package me.infamous.luffy_boss;
 
 import me.infamous.luffy_boss.common.registry.LBEntityTypes;
+import me.infamous.luffy_boss.common.registry.LBParticleTypes;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -15,5 +16,6 @@ public class LuffyBoss {
     public LuffyBoss() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         LBEntityTypes.register(modEventBus);
+        LBParticleTypes.register(modEventBus);
     }
 }

@@ -7,11 +7,17 @@ import net.minecraft.client.renderer.IRenderTypeBuffer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.BlockPos;
 import software.bernie.geckolib3.renderers.geo.GeoProjectilesRenderer;
 
 public class StormRenderer extends GeoProjectilesRenderer<StormEntity> {
     public StormRenderer(EntityRendererManager renderManager) {
         super(renderManager, new StormModel());
+    }
+
+    @Override
+    protected int getBlockLightLevel(StormEntity pEntity, BlockPos pPos) {
+        return 15;
     }
 
     @Override
