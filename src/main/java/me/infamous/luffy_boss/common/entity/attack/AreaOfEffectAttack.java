@@ -1,6 +1,8 @@
 package me.infamous.luffy_boss.common.entity.attack;
 
 import com.google.common.collect.Maps;
+import me.infamous.luffy_boss.LuffyBoss;
+import me.infamous.luffy_boss.common.LogicHelper;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.item.TNTEntity;
@@ -12,8 +14,6 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceContext;
-import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.world.World;
 
@@ -32,6 +32,7 @@ public class AreaOfEffectAttack {
    private final DamageSource damageSource;
    private final Map<PlayerEntity, Vector3d> hitPlayers = Maps.newHashMap();
    private final Vector3d position;
+   private KnockbackState knockbackState = KnockbackState.ALL;
 
    //client
    public AreaOfEffectAttack(World pLevel, double pToBlowX, double pToBlowY, double pToBlowZ, float pRadius) {
@@ -49,6 +50,11 @@ public class AreaOfEffectAttack {
       this.position = new Vector3d(this.x, this.y, this.z);
    }
 
+   public AreaOfEffectAttack(World pLevel, @Nullable Entity pSource, @Nullable DamageSource pDamageSource, double pToBlowX, double pToBlowY, double pToBlowZ, float pRadius, KnockbackState knockbackState) {
+      this(pLevel, pSource, pDamageSource, pToBlowX, pToBlowY, pToBlowZ, pRadius);
+      this.knockbackState = knockbackState;
+   }
+
    public static DamageSource aoeAttack(@Nullable AreaOfEffectAttack pExplosion) {
       return aoeAttack(pExplosion != null ? pExplosion.getSourceMob() : null);
    }
@@ -59,42 +65,6 @@ public class AreaOfEffectAttack {
       else return DamageSource.GENERIC;
    }
 
-   public static float getSeenPercent(Vector3d sourcePos, Entity target) {
-      AxisAlignedBB targetBoundingBox = target.getBoundingBox();
-      double xStep = 1.0D / ((targetBoundingBox.maxX - targetBoundingBox.minX) * 2.0D + 1.0D);
-      double yStep = 1.0D / ((targetBoundingBox.maxY - targetBoundingBox.minY) * 2.0D + 1.0D);
-      double zStep = 1.0D / ((targetBoundingBox.maxZ - targetBoundingBox.minZ) * 2.0D + 1.0D);
-      double xOffset = (1.0D - Math.floor(1.0D / xStep) * xStep) / 2.0D;
-      double zOffset = (1.0D - Math.floor(1.0D / zStep) * zStep) / 2.0D;
-      if (!(xStep < 0.0D) && !(yStep < 0.0D) && !(zStep < 0.0D)) {
-         int seenSteps = 0;
-         int totalSteps = 0;
-
-         for(float xDelta = 0.0F; xDelta <= 1.0F; xDelta = (float)((double)xDelta + xStep)) {
-            for(float yDelta = 0.0F; yDelta <= 1.0F; yDelta = (float)((double)yDelta + yStep)) {
-               for(float zDelta = 0.0F; zDelta <= 1.0F; zDelta = (float)((double)zDelta + zStep)) {
-                  double x = MathHelper.lerp(xDelta, targetBoundingBox.minX, targetBoundingBox.maxX);
-                  double y = MathHelper.lerp(yDelta, targetBoundingBox.minY, targetBoundingBox.maxY);
-                  double z = MathHelper.lerp(zDelta, targetBoundingBox.minZ, targetBoundingBox.maxZ);
-                  Vector3d from = new Vector3d(x + xOffset, y, z + zOffset);
-                  if (target.level.clip(new RayTraceContext(from, sourcePos, RayTraceContext.BlockMode.COLLIDER, RayTraceContext.FluidMode.NONE, target)).getType() == RayTraceResult.Type.MISS) {
-                     ++seenSteps;
-                  }
-
-                  ++totalSteps;
-               }
-            }
-         }
-
-         return (float)seenSteps / (float)totalSteps;
-      } else {
-         return 0.0F;
-      }
-   }
-
-   /**
-    * Does the first part of the explosion (destroy blocks)
-    */
    public void attack() {
       float diameter = this.radius * 2.0F;
       int x1 = MathHelper.floor(this.x - (double)diameter - 1.0D);
@@ -110,24 +80,15 @@ public class AreaOfEffectAttack {
          if (hitEntity.isAlive() && hitEntity instanceof LivingEntity && ((LivingEntity) hitEntity).attackable()) {
             double distanceOverDiameter = MathHelper.sqrt(hitEntity.distanceToSqr(sourcePos)) / diameter;
             if (distanceOverDiameter <= 1.0D) {
-               double xDist = hitEntity.getX() - this.x;
-               double yDist = hitEntity.getEyeY() - this.y;
-               double zDist = hitEntity.getZ() - this.z;
-               double distance = MathHelper.sqrt(xDist * xDist + yDist * yDist + zDist * zDist);
-               if (distance != 0.0D) {
-                  xDist = xDist / distance;
-                  yDist = yDist / distance;
-                  zDist = zDist / distance;
-                  double seenPercent = getSeenPercent(sourcePos, hitEntity);
-                  double damageFactor = (1.0D - distanceOverDiameter) * seenPercent;
-                  hitEntity.hurt(this.getDamageSource(), (float) calculateDamage(diameter, damageFactor));
-
-                  hitEntity.setDeltaMovement(hitEntity.getDeltaMovement().add(xDist * damageFactor, yDist * damageFactor, zDist * damageFactor));
-                  if (hitEntity instanceof PlayerEntity) {
-                     PlayerEntity hitPlayer = (PlayerEntity) hitEntity;
-                     if (!hitPlayer.isSpectator() && (!hitPlayer.isCreative() || !hitPlayer.abilities.flying)) {
-                        this.hitPlayers.put(hitPlayer, new Vector3d(xDist * damageFactor, yDist * damageFactor, zDist * damageFactor));
-                     }
+               float damage = this.radius * 2.0F;
+               hitEntity.hurt(this.getDamageSource(), damage);
+               Vector3d knockbackVec = this.constructKnockbackVector((LivingEntity) hitEntity);
+               hitEntity.setDeltaMovement(hitEntity.getDeltaMovement().add(knockbackVec));
+               if (hitEntity instanceof PlayerEntity) {
+                  LuffyBoss.LOGGER.info("Knocking back {} with {}", hitEntity.getName().getString(), knockbackVec);
+                  PlayerEntity hitPlayer = (PlayerEntity) hitEntity;
+                  if (!hitPlayer.isSpectator() && (!hitPlayer.isCreative() || !hitPlayer.abilities.flying)) {
+                     this.hitPlayers.put(hitPlayer, knockbackVec);
                   }
                }
             }
@@ -136,13 +97,24 @@ public class AreaOfEffectAttack {
 
    }
 
-   private static int calculateDamage(double diameter, double damageFactor) {
-      return (int) ((damageFactor * damageFactor + damageFactor) / 2.0D * 7.0D * diameter + 1.0D);
+   private Vector3d constructKnockbackVector(LivingEntity target) {
+      if(this.attacker != null){
+         double xRatio = MathHelper.sin(this.attacker.yRot * LogicHelper.TO_RADIANS) * MathHelper.cos(this.attacker.xRot * LogicHelper.TO_RADIANS);
+         double yRatio = MathHelper.sin(this.attacker.xRot * LogicHelper.TO_RADIANS);
+         double zRatio = -MathHelper.cos(this.attacker.yRot * LogicHelper.TO_RADIANS) * MathHelper.cos(this.attacker.xRot * LogicHelper.TO_RADIANS);
+         switch (this.knockbackState){
+            case HORIZONTAL_ONLY:
+               return (new Vector3d(xRatio, 0.0D, zRatio)).normalize().scale(this.radius * this.radius);
+            case VERTICAL_ONLY:
+               return (new Vector3d(0.0D, yRatio, 0.0D)).normalize().scale(Math.sqrt(this.radius));
+            default:
+               return (new Vector3d(xRatio, yRatio, zRatio)).normalize().multiply(this.radius * this.radius, this.radius, this.radius * this.radius);
+         }
+      } else{
+         return Vector3d.ZERO;
+      }
    }
 
-   /**
-    * Does the second part of the explosion (sound, particles, drop spawn)
-    */
    public void finalizeAttack(boolean pSpawnParticles) {
       if (this.level.isClientSide) {
          this.level.playLocalSound(this.x, this.y, this.z, SoundEvents.GENERIC_EXPLODE, SoundCategory.BLOCKS, 4.0F, (1.0F + (this.level.random.nextFloat() - this.level.random.nextFloat()) * 0.2F) * 0.7F, false);
@@ -166,9 +138,6 @@ public class AreaOfEffectAttack {
       return this.hitPlayers;
    }
 
-   /**
-    * Returns either the entity that placed the explosive block, the entity that caused the explosion or null.
-    */
    @Nullable
    public LivingEntity getSourceMob() {
       if (this.attacker == null) {
@@ -189,13 +158,10 @@ public class AreaOfEffectAttack {
       }
    }
 
-   public Vector3d getPosition() {
-      return this.position;
-   }
-
-   @Nullable
-   public Entity getAttacker() {
-      return this.attacker;
+   public enum KnockbackState{
+      ALL,
+      HORIZONTAL_ONLY,
+      VERTICAL_ONLY
    }
 
 }

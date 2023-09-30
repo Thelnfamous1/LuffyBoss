@@ -5,6 +5,7 @@ import me.infamous.luffy_boss.common.entity.ai.AnimatableMeleeAttack;
 import me.infamous.luffy_boss.common.entity.ai.AnimatableMeleeAttackGoal;
 import me.infamous.luffy_boss.common.entity.ai.controller.AttackingLookController;
 import me.infamous.luffy_boss.common.entity.ai.controller.AttackingMoveController;
+import me.infamous.luffy_boss.common.entity.attack.AreaOfEffectAttack;
 import me.infamous.luffy_boss.common.entity.attack.GiantFistEntity;
 import me.infamous.luffy_boss.common.entity.attack.LuffyAttackType;
 import me.infamous.luffy_boss.common.entity.attack.StormEntity;
@@ -15,17 +16,14 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.attributes.AttributeModifierMap;
 import net.minecraft.entity.ai.attributes.Attributes;
 import net.minecraft.entity.ai.goal.*;
-import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.potion.EffectInstance;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
@@ -160,18 +158,19 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     }
 
     @Override
+    @Nullable
     protected SoundEvent getAmbientSound() {
-        return SoundEvents.WITHER_AMBIENT;
+        return null;
     }
 
     @Override
     protected SoundEvent getHurtSound(DamageSource pDamageSource) {
-        return SoundEvents.WITHER_HURT;
+        return SoundEvents.HOSTILE_HURT;
     }
 
     @Override
     protected SoundEvent getDeathSound() {
-        return SoundEvents.WITHER_DEATH;
+        return SoundEvents.HOSTILE_DEATH;
     }
 
     @Override
@@ -267,11 +266,6 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
         this.bossEvent.setPercent(this.getHealth() / this.getMaxHealth());
     }
 
-    @Deprecated //Forge: DO NOT USE, use BlockState.canEntityDestroy
-    public static boolean canDestroy(BlockState pBlock) {
-        return !pBlock.isAir() && !BlockTags.WITHER_IMMUNE.contains(pBlock.getBlock());
-    }
-
     @Override
     public void makeStuckInBlock(BlockState pState, Vector3d pMotionMultiplier) {
     }
@@ -297,7 +291,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
             this.level.levelEvent(null, 1024, this.blockPosition(), 0);
         }
 
-        double y = this.getY() + this.getBbHeight();
+        double y = targetY + 50;
         double xDist = 0.0;
         double yDist = targetY - y;
         double zDist = 0.0;
@@ -326,16 +320,6 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
     @Override
     public boolean hurt(DamageSource pSource, float pAmount) {
         return this.hurt(this.multipartController.getPart("body"), pSource, pAmount);
-    }
-
-    @Override
-    protected void dropCustomDeathLoot(DamageSource pSource, int pLooting, boolean pRecentlyHit) {
-        super.dropCustomDeathLoot(pSource, pLooting, pRecentlyHit);
-        ItemEntity bossDrop = this.spawnAtLocation(Items.NETHER_STAR);
-        if (bossDrop != null) {
-            bossDrop.setExtendedLifetime();
-        }
-
     }
 
     @Override
@@ -477,10 +461,10 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
                 this.level.addFreshEntity(storm);
                 break;
             case SHOCKWAVE:
-                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 5.0F);
+                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 5.0F, AreaOfEffectAttack.KnockbackState.HORIZONTAL_ONLY);
                 break;
             case GROUND_PUNCH:
-                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 2.5F);
+                LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this, null, target.getX(), target.getY(), target.getZ(), 2.5F, AreaOfEffectAttack.KnockbackState.VERTICAL_ONLY);
                 break;
             case GIANT_FIST:
                 this.performRangedAttack(target);

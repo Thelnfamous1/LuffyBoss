@@ -4,7 +4,8 @@
   "compatibilityLevel": "JAVA_8",
   "refmap": "${mod_id}.refmap.json",
   "mixins": [
-    "MeleeAttackGoalAccess"
+    "MeleeAttackGoalAccess",
+    "ServerPlayNetHandlerMixin"
   ],
   "client": [],
   "minVersion": "0.8"

@@ -23,8 +23,8 @@ public class LogicHelper {
         return Math.floorDiv(pixels, 16);
     }
 
-    public static AreaOfEffectAttack areaOfEffectAttack(ServerWorld level, Entity attacker, @Nullable DamageSource pDamageSource, double pX, double pY, double pZ, float pSize) {
-        AreaOfEffectAttack areaOfEffectAttack = new AreaOfEffectAttack(level, attacker, pDamageSource, pX, pY, pZ, pSize);
+    public static AreaOfEffectAttack areaOfEffectAttack(ServerWorld level, Entity attacker, @Nullable DamageSource pDamageSource, double pX, double pY, double pZ, float pSize, AreaOfEffectAttack.KnockbackState knockbackState) {
+        AreaOfEffectAttack areaOfEffectAttack = new AreaOfEffectAttack(level, attacker, pDamageSource, pX, pY, pZ, pSize, knockbackState);
         areaOfEffectAttack.attack();
         areaOfEffectAttack.finalizeAttack(false);
 

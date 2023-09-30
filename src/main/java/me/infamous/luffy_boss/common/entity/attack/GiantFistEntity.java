@@ -48,6 +48,20 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
    }
 
    @Override
+   public void tick() {
+      this.resetRot();
+      super.tick();
+      this.resetRot();
+   }
+
+   private void resetRot() {
+      this.yRot = 0;
+      this.xRot = 0;
+      this.yRotO = 0;
+      this.xRotO = 0;
+   }
+
+   @Override
    protected float getInertia() {
       return super.getInertia();
    }
@@ -61,7 +75,7 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
    protected void onHit(RayTraceResult pResult) {
       super.onHit(pResult);
       if (!this.level.isClientSide) {
-         LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this.getOwner(), null, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z, 5.0F);
+         LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this.getOwner(), null, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z, 5.0F, AreaOfEffectAttack.KnockbackState.VERTICAL_ONLY);
          this.remove();
       }
 

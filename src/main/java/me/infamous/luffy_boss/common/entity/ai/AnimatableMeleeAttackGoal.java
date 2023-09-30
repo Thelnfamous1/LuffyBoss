@@ -64,11 +64,6 @@ public class AnimatableMeleeAttackGoal<T extends CreatureEntity & AnimatableMele
     }
 
     @Override
-    public boolean canContinueToUse() {
-        return super.canContinueToUse() || (this.attacker.getTarget() != null && this.attacker.isAttackAnimationInProgress());
-    }
-
-    @Override
     public void stop() {
         super.stop();
     }

@@ -181,7 +181,7 @@ public class StormEntity extends Entity implements IAnimatable {
                         lightningBolt.moveTo(nearbyEntity.getX(), nearbyEntity.getY(), nearbyEntity.getZ());
                         lightningBolt.setVisualOnly(true);
                         this.level.addFreshEntity(lightningBolt);
-                        nearbyEntity.hurt(DamageSource.indirectMagic(lightningBolt, this.getOwner()), lightningBolt.getDamage());
+                        nearbyEntity.hurt(DamageSource.LIGHTNING_BOLT, lightningBolt.getDamage());
 
                         if (this.radiusOnUse != 0.0F) {
                            radius += this.radiusOnUse;

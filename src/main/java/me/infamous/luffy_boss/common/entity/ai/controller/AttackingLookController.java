@@ -14,7 +14,7 @@ public class AttackingLookController<T extends MobEntity & AnimatableMeleeAttack
 
     @Override
     public void tick() {
-        if(!this.attacker.isAttackAnimationInProgress()){
+        if(true || !this.attacker.isAttackAnimationInProgress()){
             super.tick();
         }
     }
