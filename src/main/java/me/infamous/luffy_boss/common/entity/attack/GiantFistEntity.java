@@ -93,7 +93,7 @@ public class GiantFistEntity extends DamagingProjectileEntity implements IEntity
    protected void onHit(RayTraceResult pResult) {
       super.onHit(pResult);
       if (!this.level.isClientSide) {
-         LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this.getOwner(), null, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z, 5.0F, AreaOfEffectAttack.KnockbackState.VERTICAL_ONLY);
+         LogicHelper.areaOfEffectAttack((ServerWorld) this.level, this.getOwner(), null, pResult.getLocation().x, pResult.getLocation().y, pResult.getLocation().z, 10.0F, AreaOfEffectAttack.KnockbackState.VERTICAL_ONLY);
          this.remove();
       }
 

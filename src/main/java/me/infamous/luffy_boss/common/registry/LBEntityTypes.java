@@ -24,7 +24,7 @@ public class LBEntityTypes {
 
     public static final RegistryObject<EntityType<GiantFistEntity>> GIANT_FIST = register("giant_fist",
             EntityType.Builder.<GiantFistEntity>of(GiantFistEntity::new, EntityClassification.MISC)
-                    .sized(10.0F, 10.0F)
+                    .sized(20.0F, 20.0F)
                     .clientTrackingRange(4)
                     .updateInterval(10));
 

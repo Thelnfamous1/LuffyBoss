@@ -13,8 +13,8 @@ import software.bernie.geckolib3.renderers.geo.GeoProjectilesRenderer;
 public class GiantFistRenderer extends GeoProjectilesRenderer<GiantFistEntity> {
     public GiantFistRenderer(EntityRendererManager renderManager) {
         super(renderManager, new GiantFistModel());
-        this.widthScale = 16.0F;
-        this.heightScale = 16.0F;
+        this.widthScale = 32.0F;
+        this.heightScale = 32.0F;
     }
 
     @Override
