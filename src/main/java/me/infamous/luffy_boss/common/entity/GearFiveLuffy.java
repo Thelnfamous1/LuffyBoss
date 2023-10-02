@@ -101,7 +101,7 @@ public class GearFiveLuffy extends MonsterEntity implements IAnimatable, Animata
 
     public static AttributeModifierMap.MutableAttribute createAttributes() {
         return MonsterEntity.createMonsterAttributes()
-                .add(Attributes.MAX_HEALTH, 300.0D)
+                .add(Attributes.MAX_HEALTH, 2000.0D)
                 .add(Attributes.MOVEMENT_SPEED, 0.6F)
                 .add(Attributes.FOLLOW_RANGE, 40.0D)
                 .add(Attributes.ARMOR, 4.0D);
